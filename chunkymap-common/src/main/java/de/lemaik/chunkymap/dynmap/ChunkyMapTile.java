@@ -49,10 +49,11 @@ public class ChunkyMapTile extends HDMapTile {
 	public boolean render(MapChunkCache mapChunkCache, String mapName) {
 		final long startTimestamp = System.currentTimeMillis();
 		IsoHDPerspective perspective = (IsoHDPerspective) this.perspective;
+		final int tileSize = getTileSize();
 		
 		final int scaled = (boostzoom > 0 && MarkerAPIImpl
-				.testTileForBoostMarkers(world, perspective, (double) (tx * 128), (double) (ty * 128),
-						128.0D)) ? boostzoom : 0;
+				.testTileForBoostMarkers(world, perspective, (double) (tx * tileSize), (double) (ty * tileSize),
+						(double) tileSize)) ? boostzoom : 0;
 		
 		// Mark the tiles we're going to render as validated
 		ChunkyMap map = (ChunkyMap) world.maps.stream()
@@ -75,7 +76,7 @@ public class ChunkyMapTile extends HDMapTile {
 				// Bukkit.getScheduler().runTask(ChunkyMapPlugin.getPlugin(ChunkyMapPlugin.class), Bukkit.getWorld(world.getRawName())::save);
 				map.applyTemplateScene(scene);
 				scene.setName(tx + "_" + ty);
-				scene.setCanvasSize(128 * (1 << scaled), 128 * (1 << scaled));
+				scene.setCanvasSize(tileSize * (1 << scaled), tileSize * (1 << scaled));
 				scene.setTransparentSky(true);
 				scene.setYClipMin((int) perspective.minheight);
 				if (perspective.minheight == -2.147483648E9D) {
@@ -89,8 +90,7 @@ public class ChunkyMapTile extends HDMapTile {
 						scene.setYClipMax(world.worldheight - 1);
 					}
 				}
-				map.cameraAdapter.apply(scene.camera(), tx, ty, map.getMapZoomOutLevels(),
-						world.getExtraZoomOutLevels());
+				map.cameraAdapter.apply(scene.camera(), tx, ty, tileSize);
 				
 				if (renderer instanceof RemoteRenderer) {
 					if (((RemoteRenderer) renderer).shouldInitializeLocally()) {
@@ -253,6 +253,7 @@ public class ChunkyMapTile extends HDMapTile {
 	
 	@Override
 	protected String saveTileData() {
-		return String.format("%d,%d,%s,%d", this.tx, this.ty, this.perspective.getName(), this.boostzoom);
+		return String.format("%d,%d,%s,%d,%d", this.tx, this.ty, this.perspective.getName(), this.boostzoom,
+				this.tilescale);
 	}
 }
