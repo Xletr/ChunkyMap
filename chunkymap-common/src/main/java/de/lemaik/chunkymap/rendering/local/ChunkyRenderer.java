@@ -11,7 +11,9 @@ import net.time4tea.oidn.OidnImages;
 import se.llbit.chunky.PersistentSettings;
 import se.llbit.chunky.main.Chunky;
 import se.llbit.chunky.renderer.PathTracingRenderer;
+import se.llbit.chunky.renderer.RenderMode;
 import se.llbit.chunky.renderer.RenderManager;
+import se.llbit.chunky.renderer.RenderStatus;
 import se.llbit.chunky.renderer.SnapshotControl;
 import se.llbit.chunky.renderer.scene.AlphaBuffer;
 import se.llbit.chunky.renderer.scene.PathTracer;
@@ -20,6 +22,7 @@ import se.llbit.chunky.renderer.scene.SynchronousSceneManager;
 import se.llbit.chunky.resources.BitmapImage;
 import se.llbit.chunky.resources.ResourcePackLoader;
 import se.llbit.util.TaskTracker;
+import se.llbit.log.Log;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -91,6 +94,7 @@ public class ChunkyRenderer implements Renderer {
 		context.setRenderThreadCount(threads);
 		RenderManager renderManager = context.getChunky().getRenderController().getRenderManager();
 		renderManager.setCPULoad(cpuLoad);
+		renderManager.setThreadCount(Math.max(1, threads));
 		
 		SynchronousSceneManager sceneManager = new SynchronousSceneManager(context, renderManager);
 		sceneManager.withEditSceneProtected(initializeScene);
@@ -120,11 +124,17 @@ public class ChunkyRenderer implements Renderer {
 			if (enableDenoiser) {
 				sceneManager.getScene().setRenderer("Oidn4jDenoisedPathTracer");
 			}
-			sceneManager.getScene().haltRender();
-			sceneManager.getScene().setTargetSpp(targetSpp);
+			sceneManager.withSceneProtected(scene -> {
+				scene.setTargetSpp(targetSpp);
+				scene.setRenderMode(RenderMode.RENDERING);
+				scene.clearResetFlags();
+			});
 			renderManager.start();
-			sceneManager.getScene().startRender();
 			renderManager.join();
+			RenderStatus status = renderManager.getRenderStatus();
+			if (status.getSpp() < targetSpp) {
+				Log.warn("Render completed below target SPP (" + status.getSpp() + " / " + targetSpp + "). Proceeding with available samples to avoid blank tiles.");
+			}
 			result.complete(getImage(sceneManager.getScene()));
 		} catch (InterruptedException | ReflectiveOperationException e) {
 			result.completeExceptionally(new RenderException("Rendering failed", e));

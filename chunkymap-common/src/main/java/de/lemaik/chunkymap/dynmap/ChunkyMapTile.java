@@ -55,16 +55,12 @@ public class ChunkyMapTile extends HDMapTile {
 				.testTileForBoostMarkers(world, perspective, (double) (tx * tileSize), (double) (ty * tileSize),
 						(double) tileSize)) ? boostzoom : 0;
 		
-		// Mark the tiles we're going to render as validated
 		ChunkyMap map = (ChunkyMap) world.maps.stream()
 				.filter(m -> m instanceof ChunkyMap && (mapName == null || m.getName().equals(mapName))
 						&& ((ChunkyMap) m).getPerspective() == perspective
 						&& ((ChunkyMap) m).getBoostZoom() == boostzoom)
 				.findFirst().get();
 		MapTypeState mts = world.getMapState(map);
-		if (mts != null) {
-			mts.validateTile(tx, ty);
-		}
 		
 		FileBufferRenderContext context = new FileBufferRenderContext();
 		try {
@@ -142,6 +138,9 @@ public class ChunkyMapTile extends HDMapTile {
 							.flatMap(c -> getChunksAround(c.x, c.z, map.getChunkPadding()).stream())
 							.collect(Collectors.toSet());
 					scene.loadChunks(SilentTaskTracker.INSTANCE, chunkyWorld, chunks);
+					if (!scene.getChunks().containsAll(chunks)) {
+						throw new IllegalStateException("Failed to load all required chunks for tile " + tx + "_" + ty);
+					}
 				}
 			}).thenApply((image) -> {
 				MapStorage var52 = world.getMapStorage();
@@ -166,6 +165,9 @@ public class ChunkyMapTile extends HDMapTile {
 				}
 				return tileUpdated;
 			}).get();
+			if (mts != null) {
+				mts.validateTile(tx, ty);
+			}
 			return true;
 		} catch (Exception e) {
 			Log.warn("Rendering tile " + tx + "_" + ty + " failed", e);
