@@ -49,7 +49,9 @@ public class ChunkyMap extends HDMap {
 		super(dynmap, config);
 		cameraAdapter = new DynmapCameraAdapter((IsoHDPerspective) getPerspective());
 		if (config.getBoolean("chunkycloud/enabled", false)) {
+			String apiBase = config.getString("chunkycloud/apiBase", "https://api.chunkycloud.lemaik.de");
 			renderer = new RemoteRenderer(config.getString("chunkycloud/apiKey", ""),
+					apiBase,
 					config.getInteger("samplesPerPixel", 100),
 					config.getString("texturepack", null),
 					config.getBoolean("chunkycloud/initializeLocally", true));
