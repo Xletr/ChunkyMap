@@ -27,12 +27,12 @@ public class RemoteRenderer implements Renderer {
 	private final String texturepack;
 	private final boolean initializeLocally;
 	
-	public RemoteRenderer(String apiKey, String apiBase, int samplesPerPixel, String texturepack,
+	public RemoteRenderer(String apiKey, int samplesPerPixel, String texturepack,
 			boolean initializeLocally) {
 		this.samplesPerPixel = samplesPerPixel;
 		this.texturepack = texturepack;
 		this.initializeLocally = initializeLocally;
-		this.api = new ApiClient(apiBase, apiKey);
+		this.api = new ApiClient("https://api.chunkycloud.lemaik.de", apiKey);
 	}
 	
 	public boolean shouldInitializeLocally() {
